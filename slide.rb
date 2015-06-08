@@ -68,6 +68,9 @@ def in_out(indir, outdir)
     # sfを返す
     array_list = yield SimFile.new(file)
 
+    # sortして、上位1000個を出す
+    array_list = sort_with_score(array_list)[0..(1000-1)]
+
     s = ""
     array_list.each do |array|
       s += array.join(' ') + "\n"
@@ -84,6 +87,13 @@ def dd(ele)
   abort
 end
 
+def sort_with_score(shohin)
+  sorted = shohin.sort do |a, b|
+    # 降順
+    -(a[1] <=> b[1])
+  end
+  sorted
+end
 
 class SimFile
   attr_reader :path
@@ -131,6 +141,8 @@ class SimFile
     sorted
   end
 end
+
+
 
 # main
 indir = "./query_likelihood/result_all"
