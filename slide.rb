@@ -61,10 +61,47 @@ def smooth_weight(path_sim_arr_list, i, slide_num)
   [path, score]
 end
 
+# 入力と出力のヘルパー
+# 配列の配列を出力
+def in_out(indir, outdir) 
+  Dir.glob("#{indir}/*").each do |file|
+    # sfを返す
+    array_list = yield SimFile.new(file)
+
+    s = ""
+    array_list.each do |array|
+      s += array.join(' ') + "\n"
+    end
+
+    if /\/(\d+.txt)$/ =~ file
+      File.write("#{outdir}/#{$1}", s) 
+    end
+  end
+end
+
+def dd(ele)
+  pp ele
+  abort
+end
+
+
 class SimFile
+  attr_reader :path
+
   def initialize(path)
     @path = path
     @list = nil
+  end
+
+  def lectures
+    list = path_sim_arr_list
+    res = []
+    list.each do |path, sim|
+      if /(\d+-\d+)_\d+\.txt/ =~ path
+        res << $1
+      end
+    end
+    res.uniq
   end
 
   def path_sim_arr_list
@@ -81,6 +118,11 @@ class SimFile
     @list
   end
 
+  # ある講演のデータを取得
+  def path_sim_arr_list_with_lecture(lecture_id)
+    path_sim_arr_list.select {|x| x[0].match(/#{lecture_id}/)}
+  end
+
   private 
   def sort_with_path(shohin)
     sorted = shohin.sort do |a, b|
@@ -91,32 +133,26 @@ class SimFile
 end
 
 # main
-DIR_PATH = "./query_likelihood/result_all"
-
-file = "#{DIR_PATH}/01.txt"
-sf = SimFile.new(file)
-
+indir = "./query_likelihood/result_all"
+outdir = "./query_likelihood/reweight"
 slide_num = 5
-res = []
 
-for i in 0..(sf.path_sim_arr_list.size-1) 
-  res << smooth_weight(sf.path_sim_arr_list, i, slide_num)
-end
+in_out(indir, outdir) do |sf|
+  res = []
 
-pp res
+  sf.lectures.each do |lecture|
+    list = []
+    path_sim_arr_list = sf.path_sim_arr_list_with_lecture(lecture)
 
-abort
+    for i in 0..(path_sim_arr_list.size-1) 
+      list << smooth_weight(path_sim_arr_list, i, slide_num)
+    end
 
-cnt = 0
-dirs = Dir.glob('./slide_for_word2vec/*')
-dirs.each do |dir|
-        p "#{cnt} #{dir} "
-        extract_size = 20
-        files = Dir.glob("#{dir}/*")
-        files.shuffle!
-        files = files[0..(extract_size-1)] if files.size > extract_size
-        files.each_with_index do |file, i|
-                FileUtils.cp file, "#{TMP_PATH}/#{cnt}.txt"
-                cnt += 1
-        end
+    res += list
+  end
+
+  pp "[ok] #{sf.path}" 
+
+  # return [[1,1],[1,1],...]
+  res
 end
