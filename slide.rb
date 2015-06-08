@@ -34,19 +34,52 @@ def after_list(array, index, slide_size)
   a
 end
 
+#
+# afterとbeforeのlistのフォーマット
+# input [["s1",3],["s1",2],["s2",1]], [], 3
+# return [[["s1", 3], ["s1", 2], ["s2", 1]], [["", 1], ["", 2], ["", 3]]]
+#
+# [test]
+# reuturn [3,2,1], [1,2,3] 
+# pp before_after_format([["s1",3],["s1",2],["s2",1]], [], 3)
+def before_after_format(before_list, after_list, slide_num)
+  at = after_list 
+  if after_list.size != slide_num
+    # pathを空文字にする(後の混同をなくすため)
+    at = before_list.reverse.map {|x| ["", x[1]]}
+    for ai in 0..(after_list.size-1)
+      at[ai] = after_list[ai]
+    end
+  end
+
+  bt = before_list 
+  if before_list.size != slide_num
+    # pathを空文字にする(後の混同をなくすため)
+    bt = after_list.map {|x| ["", x[1]]}
+    for bi in 0..(before_list.size-1)
+      bt[bi] = before_list.reverse[bi]
+    end
+    bt = bt.reverse
+  end
+
+  return [bt, at]
+end
+
 # listにsmoothをかける
 # @param: i index番号
 def smooth_weight(path_sim_arr_list, i, slide_num)
   # 前後スライド取得
   _before_list = before_list(path_sim_arr_list, i, slide_num)
-  _affter_list = after_list(path_sim_arr_list, i, slide_num)
+  _after_list = after_list(path_sim_arr_list, i, slide_num)
 
-  # TODO: 端っこの数値の処理を丁寧にしないと
+  # 講演の端っこスライドの処理
+  # 逆側の情報をコピー
+  _before_list, _after_list = before_after_format(_before_list, _after_list, slide_num)
 
   # 重みの計算 (after)
-  affter_sum = 0.0
-  _affter_list.each_with_index do |(path, sim), i|
-    affter_sum += sim.to_f/(i+2)
+  after_sum = 0.0
+  _after_list.each_with_index do |(path, sim), i|
+    after_sum += sim.to_f/(i+2)
   end
 
   # 重みの計算 (before)
@@ -56,7 +89,7 @@ def smooth_weight(path_sim_arr_list, i, slide_num)
   end
 
   path = path_sim_arr_list[i][0]
-  score = affter_sum + before_sum + path_sim_arr_list[i][1].to_f
+  score = after_sum + before_sum + path_sim_arr_list[i][1].to_f
 
   [path, score]
 end
@@ -142,12 +175,10 @@ class SimFile
   end
 end
 
-
-
 # main
 indir = "./query_likelihood/result_all"
-outdir = "./query_likelihood/reweight"
-slide_num = 5
+outdir = "./query_likelihood/result"
+slide_num = 5 
 
 in_out(indir, outdir) do |sf|
   res = []
