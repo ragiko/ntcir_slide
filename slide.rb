@@ -1,6 +1,5 @@
 # coding: utf-8
 
-
 require 'fileutils'
 require 'pp'
 
@@ -35,6 +34,33 @@ def after_list(array, index, slide_size)
   a
 end
 
+# listにsmoothをかける
+# @param: i index番号
+def smooth_weight(path_sim_arr_list, i, slide_num)
+  # 前後スライド取得
+  _before_list = before_list(path_sim_arr_list, i, slide_num)
+  _affter_list = after_list(path_sim_arr_list, i, slide_num)
+
+  # TODO: 端っこの数値の処理を丁寧にしないと
+
+  # 重みの計算 (after)
+  affter_sum = 0.0
+  _affter_list.each_with_index do |(path, sim), i|
+    affter_sum += sim.to_f/(i+2)
+  end
+
+  # 重みの計算 (before)
+  before_sum = 0.0
+  _before_list.reverse.each_with_index do |(path, sim), i|
+    before_sum += sim.to_f/(i+2)
+  end
+
+  path = path_sim_arr_list[i][0]
+  score = affter_sum + before_sum + path_sim_arr_list[i][1].to_f
+
+  [path, score]
+end
+
 class SimFile
   def initialize(path)
     @path = path
@@ -51,36 +77,33 @@ class SimFile
       path_sim_arr_list << line.split(' ') 
     end
 
-    @list = path_sim_arr_list
+    @list = sort_with_path(path_sim_arr_list)
     @list
+  end
+
+  private 
+  def sort_with_path(shohin)
+    sorted = shohin.sort do |a, b|
+      a[0] <=> b[0] 
+    end
+    sorted
   end
 end
 
-
 # main
-DIR_PATH = "./bm25/result"
+DIR_PATH = "./query_likelihood/result_all"
 
 file = "#{DIR_PATH}/01.txt"
 sf = SimFile.new(file)
 
-i = 1 
-slide_num = 3
+slide_num = 5
+res = []
 
-_before_list = before_list(sf.path_sim_arr_list, i, slide_num)
-_affter_list = after_list(sf.path_sim_arr_list, i, slide_num)
-
-# 重みの計算
-affter_sum = 0.0
-_affter_list.each_with_index do |(path, sim), i|
-  affter_sum += sim.to_f/(i+2)
+for i in 0..(sf.path_sim_arr_list.size-1) 
+  res << smooth_weight(sf.path_sim_arr_list, i, slide_num)
 end
 
-before_sum = 0.0
-_before_list.reverse.each_with_index do |(path, sim), i|
-  before_sum += sim.to_f/(i+2)
-end
-
-pp (affter_sum + before_sum + sf.path_sim_arr_list[i][1].to_f) / (_before_list.size + _affter_list.size + 1)
+pp res
 
 abort
 
