@@ -65,6 +65,19 @@ def before_after_format(before_list, after_list, slide_num)
   return [bt, at]
 end
 
+# smoothの場合の重み計算
+def smooth_devide(slide_num)
+  if slide_num <= 1
+    return 1
+  end
+
+  sum = 0.0
+  (2..slide_num).to_a.each do |i|
+    sum += 1.0/i
+  end
+  return sum*2 + 1
+end
+
 # listにsmoothをかける
 # @param: i index番号
 def smooth_weight(path_sim_arr_list, i, slide_num)
@@ -90,6 +103,38 @@ def smooth_weight(path_sim_arr_list, i, slide_num)
 
   path = path_sim_arr_list[i][0]
   score = after_sum + before_sum + path_sim_arr_list[i][1].to_f
+
+  # 全体の重みでわる
+  score = score/smooth_devide(slide_num)
+
+  [path, score]
+end
+
+# listにsmoothをかける
+# @param: i index番号
+def average_weight(path_sim_arr_list, i, slide_num)
+  # 前後スライド取得
+  _before_list = before_list(path_sim_arr_list, i, slide_num)
+  _after_list = after_list(path_sim_arr_list, i, slide_num)
+
+  # 講演の端っこスライドの処理
+  # 逆側の情報をコピー
+  _before_list, _after_list = before_after_format(_before_list, _after_list, slide_num)
+
+  # 重みの計算 (after)
+  after_sum = 0.0
+  _after_list.each_with_index do |(path, sim), i|
+    after_sum += sim.to_f
+  end
+
+  # 重みの計算 (before)
+  before_sum = 0.0
+  _before_list.reverse.each_with_index do |(path, sim), i|
+    before_sum += sim.to_f
+  end
+
+  path = path_sim_arr_list[i][0]
+  score = ( after_sum + before_sum + path_sim_arr_list[i][1].to_f ) / (slide_num * 2 + 1)
 
   [path, score]
 end
@@ -178,7 +223,8 @@ end
 # main
 indir = "./query_likelihood/result_all"
 outdir = "./query_likelihood/result"
-slide_num = 5 
+slide_num = 5
+# per = 0.75
 
 in_out(indir, outdir) do |sf|
   res = []
@@ -187,12 +233,18 @@ in_out(indir, outdir) do |sf|
     list = []
     path_sim_arr_list = sf.path_sim_arr_list_with_lecture(lecture)
 
-    for i in 0..(path_sim_arr_list.size-1) 
+    # puts "#{lecture} #{path_sim_arr_list.size}"
+    # slide_num = (path_sim_arr_list.size.to_f * per / 2 - 1).round
+
+    for i in 0..(path_sim_arr_list.size-1)
+      # pp average_weight(path_sim_arr_list, i, slide_num)
       list << smooth_weight(path_sim_arr_list, i, slide_num)
     end
 
     res += list
+
   end
+
 
   pp "[ok] #{sf.path}" 
 

@@ -1,3 +1,8 @@
 bm25/
 correct.xml
 query_likelihood/
+
+.idea/
+inspect/
+seikai.01.txt
+slide07.txt
