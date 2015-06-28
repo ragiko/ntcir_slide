@@ -91,13 +91,13 @@ def smooth_weight(path_sim_arr_list, i, slide_num)
 
   # 重みの計算 (after)
   after_sum = 0.0
-  _after_list.each_with_index do |(path, sim), i|
+  _after_list.each_with_index do |(path, sim), j|
     after_sum += sim.to_f/(i+2)
   end
 
   # 重みの計算 (before)
   before_sum = 0.0
-  _before_list.reverse.each_with_index do |(path, sim), i|
+  _before_list.reverse.each_with_index do |(path, sim), j|
     before_sum += sim.to_f/(i+2)
   end
 
@@ -105,7 +105,7 @@ def smooth_weight(path_sim_arr_list, i, slide_num)
   score = after_sum + before_sum + path_sim_arr_list[i][1].to_f
 
   # 全体の重みでわる
-  score = score/smooth_devide(slide_num)
+  # score = score/smooth_devide(slide_num)
 
   [path, score]
 end
@@ -123,13 +123,13 @@ def average_weight(path_sim_arr_list, i, slide_num)
 
   # 重みの計算 (after)
   after_sum = 0.0
-  _after_list.each_with_index do |(path, sim), i|
+  _after_list.each_with_index do |(path, sim), j|
     after_sum += sim.to_f
   end
 
   # 重みの計算 (before)
   before_sum = 0.0
-  _before_list.reverse.each_with_index do |(path, sim), i|
+  _before_list.reverse.each_with_index do |(path, sim), j|
     before_sum += sim.to_f
   end
 
@@ -138,6 +138,47 @@ def average_weight(path_sim_arr_list, i, slide_num)
 
   [path, score]
 end
+
+def gaussian(x, mean, sigma)
+  gauss = (1/Math::sqrt(2.0*Math::PI*sigma**2)) * Math::exp(-(x-mean)**2/(2*sigma**2))
+  gauss
+end
+
+# listにsmoothをかける
+# @param: i index番号
+def gauss_weight(path_sim_arr_list, i, slide_num, sigma)
+  # 前後スライド取得
+  _before_list = before_list(path_sim_arr_list, i, slide_num)
+  _after_list = after_list(path_sim_arr_list, i, slide_num)
+
+  # 講演の端っこスライドの処理
+  # 逆側の情報をコピー
+  _before_list, _after_list = before_after_format(_before_list, _after_list, slide_num)
+
+  # ガウスの正規化用
+  gauss_norm = 0.0
+  for j in -slide_num..slide_num
+    gauss_norm += gaussian(j, 0, sigma)
+  end
+
+  # 重みの計算 (after)
+  after_sum = 0.0
+  _after_list.each_with_index do |(path, sim), j|
+    after_sum += sim.to_f * gaussian(j+1, 0, sigma)/gauss_norm
+  end
+
+  # 重みの計算 (before)
+  before_sum = 0.0
+  _before_list.reverse.each_with_index do |(path, sim), j|
+    before_sum += sim.to_f  * gaussian(j+1, 0, sigma)/gauss_norm
+  end
+
+  path = path_sim_arr_list[i][0]
+  score = after_sum + before_sum + ( path_sim_arr_list[i][1].to_f * gaussian(0, 0, sigma)/gauss_norm )
+
+  [path, score]
+end
+
 
 # 入力と出力のヘルパー
 # 配列の配列を出力
@@ -220,11 +261,21 @@ class SimFile
   end
 end
 
+# s = 0.0
+# for i in -3..3
+#   s += gaussian(i, 0, 1.3)
+# end
+#
+# for i in -3..3
+#   pp gaussian(i, 0, 1.3) / s
+# end
+# dd("")
+
 # main
 indir = "./query_likelihood/result_all"
 outdir = "./query_likelihood/result"
-slide_num = 5
-# per = 0.75
+slide_num = 7
+# per = 0.20
 
 in_out(indir, outdir) do |sf|
   res = []
@@ -233,12 +284,13 @@ in_out(indir, outdir) do |sf|
     list = []
     path_sim_arr_list = sf.path_sim_arr_list_with_lecture(lecture)
 
-    # puts "#{lecture} #{path_sim_arr_list.size}"
+    # スライドのpercent指定
     # slide_num = (path_sim_arr_list.size.to_f * per / 2 - 1).round
 
     for i in 0..(path_sim_arr_list.size-1)
-      # pp average_weight(path_sim_arr_list, i, slide_num)
-      list << smooth_weight(path_sim_arr_list, i, slide_num)
+      list <<  gauss_weight(path_sim_arr_list, i, slide_num, 2.5)
+      # list <<  smooth_weight(path_sim_arr_list, i, slide_num)
+      # list <<  average_weight(path_sim_arr_list, i, slide_num)
     end
 
     res += list
