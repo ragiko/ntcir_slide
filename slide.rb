@@ -139,8 +139,8 @@ def average_weight(path_sim_arr_list, i, slide_num)
   [path, score]
 end
 
-def gaussian(x, mean, sigma)
-  gauss = (1/Math::sqrt(2.0*Math::PI*sigma**2)) * Math::exp(-(x-mean)**2/(2*sigma**2))
+def gaussian(x, mean, ksize)
+  gauss = Math::exp(-(x-mean)**2/(2*sigma(ksize))**2)
   gauss
 end
 
@@ -157,21 +157,26 @@ def gauss_weight(path_sim_arr_list, i, slide_num, sigma)
 
   # ガウスの正規化用
   gauss_norm = 0.0
+  ksize = (slide_num * 2) + 1 # 考慮するスライド数
+
   for j in -slide_num..slide_num
-    gauss_norm += gaussian(j, 0, sigma)
+    gauss_norm += gaussian(j, 0, ksize)
   end
 
   # 重みの計算 (after)
   after_sum = 0.0
   _after_list.each_with_index do |(path, sim), j|
-    after_sum += sim.to_f * gaussian(j+1, 0, sigma)/gauss_norm
+    after_sum += sim.to_f * gaussian(j+1, 0, ksize)/gauss_norm
   end
+
 
   # 重みの計算 (before)
   before_sum = 0.0
   _before_list.reverse.each_with_index do |(path, sim), j|
-    before_sum += sim.to_f  * gaussian(j+1, 0, sigma)/gauss_norm
+    before_sum += sim.to_f  * gaussian(j+1, 0, ksize)/gauss_norm
   end
+
+
 
   path = path_sim_arr_list[i][0]
   score = after_sum + before_sum + ( path_sim_arr_list[i][1].to_f * gaussian(0, 0, sigma)/gauss_norm )
@@ -179,6 +184,9 @@ def gauss_weight(path_sim_arr_list, i, slide_num, sigma)
   [path, score]
 end
 
+def sigma(ksize)
+  0.3*(ksize/2 - 1) + 0.8
+end
 
 # 入力と出力のヘルパー
 # 配列の配列を出力
@@ -274,7 +282,7 @@ end
 # main
 indir = "./query_likelihood/result_all"
 outdir = "./query_likelihood/result"
-slide_num = 7
+slide_num = 2
 # per = 0.20
 
 in_out(indir, outdir) do |sf|
