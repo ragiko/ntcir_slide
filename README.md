@@ -9,6 +9,15 @@
     - slide_inspect.rb : 中の情報の詳細をみる
 
 ## 作業フロー
+0. resultフォルダを作成
 1. main.pyによって計算された、result/を参照
-2. result/にたいして`ruby slide.rb`を実行。
+    - 例:シンボリックリンク)
+        - ln -s /Users/tag/programing/ntcir11/workspace/web_query_likelihood/result /Users/tag/programing/tmp/ntcir_slide/input
+2. input/にたいして`ruby slide.rb`を実行。
 3. map値を計算
+    - 例
+        - 適当なプロジェクト作成(a project)
+        - a プロジェクトのresultに、slide.rbが計算したフォルダのリンクを貼る
+        - rake p=a format_map
+
+## mapは0.27くらい出る

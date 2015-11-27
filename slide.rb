@@ -311,8 +311,8 @@ end
 # dd("")
 
 # main
-indir = "./input_dir"
-outdir = "./output_dir"
+indir = "./input"
+outdir = "./result"
 slide_num = 7
 # per = 0.20
 
@@ -328,9 +328,9 @@ in_out(indir, outdir) do |sf|
 
     for i in 0..(path_sim_arr_list.size-1)
       # list <<  gauss_weight(path_sim_arr_list, i, slide_num, 2.5)
-      # list <<  smooth_weight(path_sim_arr_list, i, slide_num)
+      list <<  smooth_weight(path_sim_arr_list, i, slide_num)
       # list <<  average_weight(path_sim_arr_list, i, slide_num)
-      list <<  linear_weight(path_sim_arr_list, i, slide_num)
+      # list <<  linear_weight(path_sim_arr_list, i, slide_num)
     end
 
     res += list
