@@ -272,8 +272,8 @@ end
 # dd("")
 
 # main
-indir = "./query_likelihood/result_all"
-outdir = "./query_likelihood/result"
+indir = "./input_dir"
+outdir = "./output_dir"
 slide_num = 7
 # per = 0.20
 
