@@ -92,13 +92,13 @@ def smooth_weight(path_sim_arr_list, i, slide_num)
   # 重みの計算 (after)
   after_sum = 0.0
   _after_list.each_with_index do |(path, sim), j|
-    after_sum += sim.to_f/(j+2)
+    after_sum += sim.to_f/((j+2)*1.05)
   end
 
   # 重みの計算 (before)
   before_sum = 0.0
   _before_list.reverse.each_with_index do |(path, sim), j|
-    before_sum += sim.to_f/(j+2)
+    before_sum += sim.to_f/((j+2)*1.05)
   end
 
   path = path_sim_arr_list[i][0]
@@ -265,7 +265,7 @@ class SimFile
     list = path_sim_arr_list
     res = []
     list.each do |path, sim|
-      if /(\d+-\d+)_\d+\.txt/ =~ path
+      if /(\d+-\d+)_\d+.*\.txt/ =~ path
         res << $1
       end
     end
@@ -313,7 +313,7 @@ end
 # main
 indir = "./input"
 outdir = "./result"
-slide_num = 7
+slide_num = 6
 # per = 0.20
 
 in_out(indir, outdir) do |sf|
